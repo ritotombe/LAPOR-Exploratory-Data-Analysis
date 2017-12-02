@@ -32,3 +32,5 @@ colnames(total) <- c("area",
                      "report_closed",
                      "created_at",
                      "updated_at")
+
+write.csv(total, file = 'data/total.csv')
