@@ -7,11 +7,15 @@ install.packages("knitr")
 install.packages("dplyr")
 install.packages('gridExtra')
 install.packages('map')
+install.packages('lubridate')
+install.packages('anytime')
 library(ggplot2)
 library(knitr)
 library(dplyr)
 library(gridExtra)
 library(ggmap)
+library(lubridate)
+library(anytime)
 ```
 
 ```{r echo=FALSE, Load_the_Data}
@@ -52,7 +56,6 @@ summary(df)
 Below are the histograms of the dataset
 
 ```{r echo=FALSE, Univariate_Plots}
-
 df.group_by_status <- group_by(df, status)
 
 df.status_count <- summarise(df.group_by_status,
@@ -65,7 +68,37 @@ labels <- paste(labels, "%", sep=" ")
 pie(df.status_count$n, labels = labels, main = "Report Status Proportion")
 ```
 
-As shown in the chart, the reports are mostly finished (Selesai) and less than 1% is still waiting to be processed. I wonder, when are these reports started.
+As shown in the chart, the reports are mostly finished (Selesai) and less than 1% is still waiting to be processed. I wonder, when are these reports issued
+
+```{r echo=FALSE, Univariate_Plots}
+#https://stackoverflow.com/questions/17496358/r-help-converting-factor-to-date
+#https://stackoverflow.com/questions/22603847/how-to-extract-month-from-date-in-r
+#https://stackoverflow.com/questions/13456241/convert-unix-epoch-to-date-object
+df$created_at <- as.Date(df$created_at, format = "%Y-%m-%d")
+df$report_issued.month <- month(anydate(df$report_issued))
+df$report_issued.year <- year(anydate(df$report_issued))
+df$report_issued.day <- weekdays(anydate(df$report_issued))
+
+not_processed <- subset(df, status == 'Belum')
+
+q1 <- qplot(data = df, x = report_issued.month, binwidth = 1, color = I('orange'))+
+  scale_x_continuous(breaks = seq(1, 12, 1))
+
+q2 <- qplot(data = df, x = report_issued.year, binwidth = 1, color = I('orange') )+
+  scale_x_continuous(breaks = seq(2009, 2016, 1))
+
+q3 <- qplot(data = df, x = report_issued.day, color = I('orange'))
+
+q4 <- qplot(data = not_processed, x = report_issued.month, binwidth = 1, color = I('orange'))+
+  scale_x_continuous(breaks = seq(1, 12, 1))
+
+q5 <- qplot(data = not_processed, x = report_issued.year, binwidth = 1, color = I('orange') )+
+  scale_x_continuous(breaks = seq(2009, 2016, 1))
+
+q6 <- qplot(data = not_processed, x = report_issued.day, color = I('orange'))
+
+grid.arrange(q1, q2, q3, q4, q5, q6, ncol = 3)
+```
 
 > **Tip**: Make sure that you leave a blank line between the start / end of
 each code block and the end / start of your Markdown text so that it is
