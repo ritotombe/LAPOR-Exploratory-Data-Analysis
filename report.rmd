@@ -2,9 +2,10 @@ LAPOR! EDA by Septi Rito Tombe
 ========================================================
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
-install.packages("ggplot2", dependencies = T) 
-install.packages("knitr", dependencies = T)
-install.packages("dplyr", dependencies = T)
+install.packages("ggplot2") 
+install.packages("knitr")
+install.packages("dplyr")
+install.packages('gridExtra')
 install.packages('map')
 library(ggplot2)
 library(knitr)
@@ -38,54 +39,33 @@ There should be multiple code chunks and text sections; the first one below is
 just to help you get started.
 
 ```{r echo=FALSE, Univariate_Plots}
-dim(wq)
+dim(df)
 ```
 ```{r echo=FALSE, Univariate_Plots}
-str(wq)
+str(df)
 ```
 
 ```{r echo=FALSE, Univariate_Plots}
-summary(wq)
+summary(df)
 ```
 
 Below are the histograms of the dataset
 
-###Fixed Acidity
-
 ```{r echo=FALSE, Univariate_Plots}
-qplot(data = wq, x = quality, fill = I('orange'), color = I('black'), binwidth = 1) +
-  scale_x_continuous(breaks =  seq(0, max(wq$quality+1), 1)) 
+
+df.group_by_status <- group_by(df, status)
+
+df.status_count <- summarise(df.group_by_status,
+                             n = n(),
+                             proportion = round(n()/nrow(df.group_by_status)*100,3))
+
+#https://www.statmethods.net/graphs/pie.html
+labels <- paste(c("Waiting", "In Progress", "Finished"), df.status_count$proportion)
+labels <- paste(labels, "%", sep=" ")
+pie(df.status_count$n, labels = labels, main = "Report Status Proportion")
 ```
-- Why mostly on 5-6 quality?
-- What determine quality?
 
-###Chemical Properties Histogram
-```{r echo=FALSE, Univariate_Plots}
-plot1 <- qplot(data = wq, x = fixed.acidity, fill = I('orange'), color = I('black'), binwidth = .1) +
-  scale_x_continuous(breaks =  seq(0, max(wq$fixed.acidity+1), 1)) 
-
-plot2 <- qplot(data = wq, x = volatile.acidity, fill = I('orange'), color = I('black'), binwidth = .05) +
-  scale_x_continuous(breaks =  seq(0, max(wq$fixed.acidity+1), 1)) 
-
-plot3 <- qplot(data = wq, x = citric.acid, fill = I('orange'), color = I('black'), binwidth = .05)
-
-plot4 <- qplot(data = wq, x = residual.sugar, fill = I('orange'), color = I('black'))
-
-plot5 <- qplot(data = wq, x = chlorides, fill = I('orange'), color = I('black')) + 
-  scale_x_log10()
-
-plot6 <- qplot(data = wq, x = free.sulfur.dioxide, fill = I('orange'), color = I('black'))
-
-plot7 <- qplot(data = wq, x = total.sulfur.dioxide, fill = I('orange'), color = I('black'))
-
-plot8 <- qplot(data = wq, x = pH, fill = I('orange'), color = I('black'))
-
-plot9 <- qplot(data = wq, x = sulphates, fill = I('orange'), color = I('black'))
-
-plot10 <- qplot(data = wq, x = alcohol, fill = I('orange'), color = I('black'))
-
-
-```
+As shown in the chart, the reports are mostly finished (Selesai) and less than 1% is still waiting to be processed. I wonder, when are these reports started.
 
 > **Tip**: Make sure that you leave a blank line between the start / end of
 each code block and the end / start of your Markdown text so that it is
