@@ -33,4 +33,7 @@ colnames(total) <- c("area",
                      "created_at",
                      "updated_at")
 
+# remove rare factor levels
+# https://stackoverflow.com/questions/24259194/elegant-way-to-drop-rare-factor-levels-from-data-frame
+
 write.csv(total, file = 'data/total.csv')
