@@ -9,6 +9,7 @@ install.packages('gridExtra')
 install.packages('map')
 install.packages('lubridate')
 install.packages('anytime')
+install.packages("grid")
 library(ggplot2)
 library(knitr)
 library(dplyr)
@@ -16,11 +17,12 @@ library(gridExtra)
 library(ggmap)
 library(lubridate)
 library(anytime)
+library(grid)
 ```
 
 ```{r echo=FALSE, Load_the_Data}
 # Load the Data
-df <- read.csv('data/total.csv')
+df <- read.csv('data/total.csv') 
 ```
 # Introduction
 This data fetched from http://data.go.id/dataset/data-aspirasi-dan-pengaduan-masyarakat. It contains reports from Indonesian citizens by a platform called LAPOR!. This platform enables the officials to solve public issues that posted by citizens and it also inform the citizen if the issue was solved. Originally, the data was consist of two csvs, the first csv (data.csv) contains the report's content and its attributes such as creator, area, and category. The other csv (daftararea.csv), contains the area details including its latitude and longitude. Eventually, the csvs was merged based on "area" as shown in the *wrangle.R* file. However, some attributes were **deleted** because it contains redundancy with the other attributes or may contains sensitive materials, such attribute is the report's content.
@@ -68,62 +70,106 @@ labels <- paste(labels, "%", sep=" ")
 pie(df.status_count$n, labels = labels, main = "Report Status Proportion")
 ```
 
-As shown in the chart, the reports are mostly finished (Selesai) and less than 1% is still waiting to be processed. I wonder, when are these reports issued
+As shown in the chart, the reports are mostly finished (Selesai) and less than 1% is still waiting to be processed. I wonder, when are these reports issued.
 
 ```{r echo=FALSE, Univariate_Plots}
 #https://stackoverflow.com/questions/17496358/r-help-converting-factor-to-date
 #https://stackoverflow.com/questions/22603847/how-to-extract-month-from-date-in-r
 #https://stackoverflow.com/questions/13456241/convert-unix-epoch-to-date-object
-df$created_at <- as.Date(df$created_at, format = "%Y-%m-%d")
 df$report_issued.month <- month(anydate(df$report_issued))
 df$report_issued.year <- year(anydate(df$report_issued))
 df$report_issued.day <- weekdays(anydate(df$report_issued))
 
 not_processed <- subset(df, status == 'Belum')
 
-q1 <- qplot(data = df, x = report_issued.month, binwidth = 1, color = I('orange'))+
+q1 <- qplot(data = df, x = report_issued.month, binwidth = 1, color = I('white'))+
   scale_x_continuous(breaks = seq(1, 12, 1))
 
-q2 <- qplot(data = df, x = report_issued.year, binwidth = 1, color = I('orange') )+
+q2 <- qplot(data = df, x = report_issued.year, binwidth = 1, color = I('white') )+
   scale_x_continuous(breaks = seq(2009, 2016, 1))
 
-q3 <- qplot(data = df, x = report_issued.day, color = I('orange'))
+q3 <- qplot(data = df, x = report_issued.day, color = I('white')) +
+  scale_x_discrete(limits =  c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
 
-q4 <- qplot(data = not_processed, x = report_issued.month, binwidth = 1, color = I('orange'))+
+q4 <- qplot(data = not_processed, x = report_issued.month, binwidth = 1, color = I('white'))+
   scale_x_continuous(breaks = seq(1, 12, 1))
 
-q5 <- qplot(data = not_processed, x = report_issued.year, binwidth = 1, color = I('orange') )+
+q5 <- qplot(data = not_processed, x = report_issued.year, binwidth = 1, color = I('white') )+
   scale_x_continuous(breaks = seq(2009, 2016, 1))
 
-q6 <- qplot(data = not_processed, x = report_issued.day, color = I('orange'))
+q6 <- qplot(data = not_processed, x = report_issued.day, color = I('white')) +
+  scale_x_discrete(limits =  c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
 
-grid.arrange(q1, q2, q3, q4, q5, q6, ncol = 3)
+grid.arrange(textGrob("All Status"), q1, q2, q3, textGrob("Waiting"), q4, q5, q6, ncol = 4, top = "Number of Reports Issued (Issue Time)" )
 ```
 
-> **Tip**: Make sure that you leave a blank line between the start / end of
-each code block and the end / start of your Markdown text so that it is
-formatted nicely in the knitted text. Note as well that text on consecutive
-lines is treated as a single space. Make sure you have a blank line between
-your paragraphs so that they too are formatted for easy readability.
+As shown on the histograms above, there are some similarities and differences between the overall status and the waiting data. The similarities can be found in monthly and daily basis, such as the highest report issued in January and least reports issued on weekends. In the other hand, on yearly basis it shows the graphs are contradicted. This make me wonder how long it typically an issue to be solved? I will cover this in Bivariate section.
+
+Furthermore, lets check another time series variables. Such last activity, I wonder how long typically an acitvity being idle/processed (report_last_activity != report_closed).
+
+```{r echo=FALSE, Univariate_Plots}
+df$idle_time <- df$report_last_activity - df$report_issued
+
+df$idle_time.month <- df$idle_time/60/60/24/30
+
+df$idle_time.day <- df$idle_time/60/60/24
+
+q1 <- qplot(data =  subset(df, report_closed != report_last_activity), x = idle_time.month,  binwidth = 1, color =  I("white")) + 
+  scale_x_continuous(limits = c(0,quantile(df$idle_time.month, 0.99)), breaks = seq(0,quantile(df$idle_time.month, 0.99), 1)) +
+  labs(title = "Waiting/Processing Time (monthly basis)", x = "number of month(s)")
+
+q2 <- qplot(data =  subset(df, report_closed != report_last_activity), x = idle_time.day, binwidth = 5, color = I("white")) +
+  scale_x_continuous(limits = c(0,quantile(df$idle_time.day, 0.99))) + 
+  labs(title = "Waiting/Processing Time (daily basis)", x = "number of day(s)")
+
+grid.arrange(q1, q2)
+```
+The histogram is highly skewed showing that time for waiting to be processed/processed time is relatively low. However, there are outliers indicated by longtail to be investigated.
+
+```{r echo=FALSE, Univariate_Plots}
+summary(subset(df$idle_time.day, df$idle_time.day >= 0))
+```
+
+I want to investigate the report_closed, when mostly the reports finished.
+
+```{r echo=FALSE, Univariate_Plots}
+df$report_closed.month <- month(anydate(df$report_closed))
+df$report_closed.year <- year(anydate(df$report_closed))
+df$report_closed.day <- weekdays(anydate(df$report_closed))
+
+
+q1 <- qplot(data = df, x = report_closed.month, binwidth = 1, color = I('white'))+
+  scale_x_continuous(breaks = seq(1, 12, 1))
+
+q2 <- qplot(data = df, x = report_closed.year, binwidth = 1, color = I('white') )+
+  scale_x_continuous(breaks = seq(2009, 2016, 1))
+
+q3 <- qplot(data = df, x = report_closed.day, color = I('white')) +
+  scale_x_discrete(limits =  c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+
+grid.arrange(q1, q2, q3, top = "Number of Reports Closed (Issue Time)" )
+```
+
+As shown, there are some unusual distribution on the daily histogram, lowest activity presented in Friday and Saturday. In contrast, In general in Indonesia, weekend are Saturday and Sunday. The monthly data shows that mostly reports closed in March and November.
 
 # Univariate Analysis
 
-> **Tip**: Now that you've completed your univariate explorations, it's time to
-reflect on and summarize what you've found. Use the questions below to help you
-gather your observations and add your own if you have other thoughts!
-
 ### What is the structure of your dataset?
+The data consists of 79565 reports in 2012-2015. Originally, the data consist of 11 features; eventually, the data expanded to 17 features.
 
 ### What is/are the main feature(s) of interest in your dataset?
+The main features of the data is the report is the *status*, *area*, and the time series (*report_issued*, *report_last_activity*, and *report_closed*). I intend to investigate areas that have best response in time and finished rate. Furthermore, I also want to investigate the same thing with the *related_department*
 
-### What other features in the dataset do you think will help support your \
-investigation into your feature(s) of interest?
+### What other features in the dataset do you think will help support your\investigation into your feature(s) of interest?
+Additional features like the duration between issued time vs closed time would be a good feature to answer the questions. Moreover, with latitude and longitude I can visualise the data to be more comprehensive in map.
 
 ### Did you create any new variables from existing variables in the dataset?
+Yes, I created count of each status to find proportion. I also created some new features regarding the time data. For example, the report_issued.month is purposed to group the data into montly basis. Another example is idle_time indicating duration between report_issued and report_last_activity.
 
-### Of the features you investigated, were there any unusual distributions? \
-Did you perform any operations on the data to tidy, adjust, or change the form \
-of the data? If so, why did you do this?
+### Of the features you investigated, were there any unusual distributions? \ Did you perform any operations on the data to tidy, adjust, or change the form \ of the data? If so, why did you do this?
+There is unusual distribution shown in Waiting status, it is contrasting with the overall status. The waiting status shows the data to be declining; in contrast, the overall data shows to be increasing. Another unusual distribution also found in monthly issued data, it shows mostly reports were issued in January. Another anomaly also shown in reports closed on day basis, it is interesting that there is no reports closed in Saturday but there are some reports closed on Sunday. It is interesting because the reports should closed by the officials that should be not working on Sunday. (However, I still unsure maybe if the user delete the report, it also counted as report closed)
+
+There are some actions was conducted to adjust the data. For example, there are some negative values in the duration timeseries, it might be caused by null values in the one of the feature, thus, in visualisation and summary I limit the data from 0. This was done to reduce confusion in presenting the data. 
 
 
 # Bivariate Plots Section

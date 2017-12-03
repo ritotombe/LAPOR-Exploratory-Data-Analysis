@@ -14,7 +14,7 @@ total <- merge(area,report,by="Area")
 total <- na.omit(total)
 
 #remove unnecessary columns
-total <- total[, !names(total) %in% c("parent_id", "area_name", "X", "TrackingID", "KategoriID", "DisposisiInstansiID", "AreaID", "TanggalDisposisi", "TanggalLaporanMasuk", "TanggalLaporanAktivitasTerakhir", "TanggalLaporanDitutup", "TimestampTanggalDisposisi")]
+total <- total[, !names(total) %in% c("parent_id", "area_name", "X", "TrackingID", "KategoriID", "DisposisiInstansiID", "AreaID", "TanggalDisposisi", "TanggalLaporanMasuk", "TanggalLaporanAktivitasTerakhir", "TanggalLaporanDitutup", "TimestampTanggalDisposisi", "created_at", "updated_at")]
 
 #rename column's names
 #https://stackoverflow.com/questions/6081439/changing-column-names-of-a-data-frame
@@ -29,9 +29,7 @@ colnames(total) <- c("area",
                      "status",
                      "report_issued",
                      "report_last_activity",
-                     "report_closed",
-                     "created_at",
-                     "updated_at")
+                     "report_closed")
 
 # remove rare factor levels
 # https://stackoverflow.com/questions/24259194/elegant-way-to-drop-rare-factor-levels-from-data-frame
