@@ -10,6 +10,8 @@ install.packages('map')
 install.packages('lubridate')
 install.packages('anytime')
 install.packages("grid")
+install.packages('GGally')
+install.packages('psych')
 library(ggplot2)
 library(knitr)
 library(dplyr)
@@ -18,6 +20,8 @@ library(ggmap)
 library(lubridate)
 library(anytime)
 library(grid)
+library(GGally)
+library(psych)
 ```
 
 ```{r echo=FALSE, Load_the_Data}
@@ -180,9 +184,75 @@ yourself to relationships between a main output feature and one of the
 supporting variables. Try to look at relationships between supporting variables
 as well.
 
+Here I want to get insights from factors variables. I have three factor variables that I supposed may have meaning (reporter, category, related_department). Nevertheless, these variables has a high degree of level. Thus, I need to subset it to most common ones (5 or 10 levels) for the sake of readability. To do that, I want to create variables of these factors' levels' counts and sort it descending.
+
+``` {r echo=FALSE, Bivariate_Plots}
+df.area_count <- count(df, area)
+df.area_count <- df.area_count[order(-df.area_count$n),]
+df$area.ordered <- ordered(df$area, levels = df.area_count$area)
+
+
+df.reporter_count <- count(df, reporter)
+df.reporter_count <- df.reporter_count[order(-df.reporter_count$n),]
+df$reporter.ordered <- ordered(df$reporter, levels = df.reporter_count$reporter)
+df.reporter_count <- df.reporter_count[1:100,]
+
+df.category_count <- count(df, category)
+df.category_count <- df.category_count[order(-df.category_count$n),]
+df$category.ordered <- ordered(df$category, levels = df.category_count$category)
+df.category_count <- df.category_count[1:50,]
+
+
+df.related_department_count <- count(df, related_department)
+df.related_department_count <- df.related_department_count[order(-df.related_department_count$n),]
+df.related_department_count <- df.related_department_count[1:10,]
+```
+
 ```{r echo=FALSE, Bivariate_Plots}
+ ggplot(data = subset(df, area %in% df.area_count$area), aes(y = area.ordered, x = idle_time.day)) + 
+  geom_point(alpha = .1) +
+  scale_x_continuous(breaks = seq(0, 5000, 100))
+```
+
+```{r echo=FALSE, Bivariate_Plots}
+ ggplot(data = subset(df, category %in% df.category_count$category), aes(y = category.ordered, x = idle_time.day)) + 
+  geom_point(alpha = .1) +
+  scale_x_continuous( breaks = seq(0, 5000, 50))
+```
+
+In regards of the categories, it is interesting that there are some categories that shows high variability in term of duration to finish it. For example (the plot should be enlarged to find all category), Jamkesmas, Raskin, ESDM, and BLSM. It is interesting to find out what the cause of this. Let see another variables.
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = subset(df, reporter %in% df.reporter_count$reporter), aes(y = reporter.ordered, x = idle_time.day)) + 
+  geom_point(alpha = .1) +
+  scale_x_continuous(breaks = seq(0, 5000, 100))
+```
+There is something special here for user "6281680xxxx ", it seems his/her report mostly done in a long duration.Let see what is it?
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = subset(df, reporter == '6281680xxxx '), aes(y = reporter.ordered, x = category.ordered)) + 
+  geom_jitter(alpha = .5)
+
+subset(df, reporter == '6281680xxxx ')
+```
+Apparently, there are two categories that may done in long period which are, *Topik Lainnya* (other topic) and *Lingkungan hidup dan penanggulangan bencana* (Enviromental and Disaster Countermeasures), both of them are enlisted as top 10 report category. I think, it because the clarity of the report content so it requires time to determine which department that has to deal with it, or it suppoesed to took long time to finish.
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = subset(df, related_department %in% df.related_department_count$related_department), aes(y = related_department, x = idle_time.day)) + 
+  geom_jitter(alpha = .05) +
+  scale_x_continuous(limits = c(0, quantile(df$idle_time.day, 0.68)), breaks = seq(0, 30, 1))
+```
+
+
+```{r echo=FALSE, Bivariate_Plots}
+ggplot(data = df, aes(y = idle_time.day, x = report_issued.day)) + 
+  geom_jitter(alpha = .01) +
+  scale_y_continuous(limits = c(0, quantile(df$idle_time.day, 0.68)), breaks = seq(0, 30, 1)) +
+  scale_x_discrete(limits =  c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')) + 
+  labs(x = 'Day of the Reports Issued', y = 'Duration of Waiting Time to Finish', title = 'Day Issued vs Duration to Finish')
 
 ```
+
+It is interesting that this shows that every weekend there are small amount of reports finished, although there are some which might be urgent reports. However, on most case, reports are done only in one day (see Monday - Thursday), while on Friday, whether they intend to finish it in same day or on Monday after the weekends. Furthermore, on Saturday and Sunday, it seems there is very little report, thus there is no significant number of common duration.
 
 # Bivariate Analysis
 
