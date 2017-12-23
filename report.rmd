@@ -2,16 +2,6 @@ LAPOR! EDA by Septi Rito Tombe
 ========================================================
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
-install.packages("ggplot2") 
-install.packages("knitr")
-install.packages("dplyr")
-install.packages('gridExtra')
-install.packages('map')
-install.packages('lubridate')
-install.packages('anytime')
-install.packages("grid")
-install.packages('GGally')
-install.packages('psych')
 library(ggplot2)
 library(knitr)
 library(dplyr)
@@ -35,33 +25,27 @@ The rationale behind this data is to explore the usage of the platform. Some que
 1. When is the reports most frequently posted?
 2. Proportion of solved reports.
 3. Where are mostly the reports originated?
-4. etc... (I intent to create 5W + 1H questions as necessary as possible while exploring the data)
+4. Are there any interesting value regarding th idle time of each report?
+5. etc... (I intent to create 5W + 1H questions as necessary as possible while exploring the data)
 
-This report will contain four main sections. The first three section will contain univariate, bivariate, and multivariate data exloration. Finally, the last section will summarise all the findings and present a reflection. 
+This report will contain four main sections. The first three section will contain univariate, bivariate, and multivariate data exploration. Finally, the last section will summarise all the findings and present a reflection. 
 
 # Univariate Plots Section
 
-> **Tip**: In this section, you should perform some preliminary exploration of
-your dataset. Run some summaries of the data and create univariate plots to
-understand the structure of the individual variables in your dataset. Don't
-forget to add a comment after each plot or closely-related group of plots!
-There should be multiple code chunks and text sections; the first one below is
-just to help you get started.
-
-```{r echo=FALSE, Univariate_Plots}
+```{r echo=FALSE, Data_Summary_1}
 dim(df)
 ```
-```{r echo=FALSE, Univariate_Plots}
+```{r echo=FALSE, Data_Summary_2}
 str(df)
 ```
 
-```{r echo=FALSE, Univariate_Plots}
+```{r echo=FALSE, Data_Summary_3}
 summary(df)
 ```
 
-Below are the histograms of the dataset
+Below are the overall overview of the dataset
 
-```{r echo=FALSE, Univariate_Plots}
+```{r echo=FALSE, Overall_Report_Proportion}
 df.group_by_status <- group_by(df, status)
 
 df.status_count <- summarise(df.group_by_status,
@@ -111,7 +95,7 @@ As shown on the histograms above, there are some similarities and differences be
 
 Furthermore, lets check another time series variables. Such last activity, I wonder how long typically an acitvity being idle/processed (report_last_activity != report_closed).
 
-```{r echo=FALSE, Univariate_Plots}
+```{r echo=FALSE, Waiting_Time}
 df$idle_time <- df$report_last_activity - df$report_issued
 
 df$idle_time.month <- df$idle_time/60/60/24/30
@@ -122,21 +106,20 @@ q1 <- qplot(data =  subset(df, report_closed != report_last_activity), x = idle_
   scale_x_continuous(limits = c(0,quantile(df$idle_time.month, 0.99)), breaks = seq(0,quantile(df$idle_time.month, 0.99), 1)) +
   labs(title = "Waiting/Processing Time (monthly basis)", x = "number of month(s)")
 
-q2 <- qplot(data =  subset(df, report_closed != report_last_activity), x = idle_time.day, binwidth = 5, color = I("white")) +
-  scale_x_continuous(limits = c(0,quantile(df$idle_time.day, 0.99))) + 
+q2 <- qplot(data =  subset(df, report_closed != report_last_activity), x = idle_time.day, binwidth = 50, color = I("white")) + 
   labs(title = "Waiting/Processing Time (daily basis)", x = "number of day(s)")
 
 grid.arrange(q1, q2)
 ```
-The histogram is highly skewed showing that time for waiting to be processed/processed time is relatively low. However, there are outliers indicated by longtail to be investigated.
+The histogram is highly skewed showing that time for waiting to be processed/processed time is relatively low. However, there are outliers indicated by longtail to be investigated. Furthermore, there is something interesting in the daily basis of waiting time, it shows increasing towards 500, while before it reach a slope.
 
-```{r echo=FALSE, Univariate_Plots}
+```{r echo=FALSE, Subset_Summary}
 summary(subset(df$idle_time.day, df$idle_time.day >= 0))
 ```
 
 I want to investigate the report_closed, when mostly the reports finished.
 
-```{r echo=FALSE, Univariate_Plots}
+```{r echo=FALSE, Univariate_Plots_2}
 df$report_closed.month <- month(anydate(df$report_closed))
 df$report_closed.year <- year(anydate(df$report_closed))
 df$report_closed.day <- weekdays(anydate(df$report_closed))
@@ -162,7 +145,7 @@ As shown, there are some unusual distribution on the daily histogram, lowest act
 The data consists of 79565 reports in 2012-2015. Originally, the data consist of 11 features; eventually, the data expanded to 17 features.
 
 ### What is/are the main feature(s) of interest in your dataset?
-The main features of the data is the report is the *status*, *area*, and the time series (*report_issued*, *report_last_activity*, and *report_closed*). I intend to investigate areas that have best response in time and finished rate. Furthermore, I also want to investigate the same thing with the *related_department*
+The main features of the data is the report is the *status*, *area*, *idle_time* and the time series (*report_issued*, *report_last_activity*, and *report_closed*). I intend to investigate areas that have best response in time and finished rate. Furthermore, I also want to investigate the same thing with the *related_department*. 
 
 ### What other features in the dataset do you think will help support your\investigation into your feature(s) of interest?
 Additional features like the duration between issued time vs closed time would be a good feature to answer the questions. Moreover, with latitude and longitude I can visualise the data to be more comprehensive in map.
@@ -178,19 +161,13 @@ There are some actions was conducted to adjust the data. For example, there are 
 
 # Bivariate Plots Section
 
-> **Tip**: Based on what you saw in the univariate plots, what relationships
-between variables might be interesting to look at in this section? Don't limit
-yourself to relationships between a main output feature and one of the
-supporting variables. Try to look at relationships between supporting variables
-as well.
+Here I want to get insights from factors variables. I have three factor variables that I supposed may have meaning (reporter, category, related_department). Nevertheless, these variables has a high degree of level. Thus, I need to subset it to most common ones (50 or 100 levels) for the sake of readability. To do that, I want to create variables of these factors' levels' counts and sort it descending.
 
-Here I want to get insights from factors variables. I have three factor variables that I supposed may have meaning (reporter, category, related_department). Nevertheless, these variables has a high degree of level. Thus, I need to subset it to most common ones (5 or 10 levels) for the sake of readability. To do that, I want to create variables of these factors' levels' counts and sort it descending.
-
-``` {r echo=FALSE, Bivariate_Plots}
+``` {r echo=FALSE, Features_Generation}
 df.area_count <- count(df, area)
 df.area_count <- df.area_count[order(-df.area_count$n),]
 df$area.ordered <- ordered(df$area, levels = df.area_count$area)
-
+df.area_count <- df.area_count[1:50,]
 
 df.reporter_count <- count(df, reporter)
 df.reporter_count <- df.reporter_count[order(-df.reporter_count$n),]
@@ -205,45 +182,56 @@ df.category_count <- df.category_count[1:50,]
 
 df.related_department_count <- count(df, related_department)
 df.related_department_count <- df.related_department_count[order(-df.related_department_count$n),]
-df.related_department_count <- df.related_department_count[1:10,]
+df$related_department.ordered <- ordered(df$related_department, levels = df.related_department_count$related_department)
+df.related_department_count <- df.related_department_count[1:50,]
+
+
 ```
 
-```{r echo=FALSE, Bivariate_Plots}
+At first, I want to see the distribution of these variables to the idle time.
+
+```{r echo=FALSE, Time_to_Wait_Based_on_Area}
  ggplot(data = subset(df, area %in% df.area_count$area), aes(y = area.ordered, x = idle_time.day)) + 
   geom_point(alpha = .1) +
-  scale_x_continuous(breaks = seq(0, 5000, 100))
+  scale_x_continuous(breaks = seq(0, 5000, 100)) +
+  labs(x = 'Waiting Time', y = "Area", title = 'Time to Wait/Area') 
 ```
+I guess, this figure shows that the daily basis waiting time's anomaly. In detail, there are some provinces and cities that have similar pattern (high completion around 0-100 and 400-500). But still, I wonder are there any variables that produces same pattern?
 
-```{r echo=FALSE, Bivariate_Plots}
+```{r echo=FALSE, Time_to_Wait_Based_on_Category}
  ggplot(data = subset(df, category %in% df.category_count$category), aes(y = category.ordered, x = idle_time.day)) + 
   geom_point(alpha = .1) +
-  scale_x_continuous( breaks = seq(0, 5000, 50))
+  scale_x_continuous( breaks = seq(0, 5000, 50)) +
+  labs(x = 'Waiting Time', y = "Category", title = 'Time to Wait/Category') 
 ```
 
-In regards of the categories, it is interesting that there are some categories that shows high variability in term of duration to finish it. For example (the plot should be enlarged to find all category), Jamkesmas, Raskin, ESDM, and BLSM. It is interesting to find out what the cause of this. Let see another variables.
-```{r echo=FALSE, Bivariate_Plots}
+In regards of the categories, it is interesting that there are some categories that shows high variability in term of duration to finish it. For example (the plot should be enlarged to find all category), Jamkesmas, Raskin, ESDM, and BLSM. However, it does not produce same pattern as earlier plot. Let see another variables.
+```{r echo=FALSE, Time_to_Wait_Based_on_Reporter}
 ggplot(data = subset(df, reporter %in% df.reporter_count$reporter), aes(y = reporter.ordered, x = idle_time.day)) + 
   geom_point(alpha = .1) +
-  scale_x_continuous(breaks = seq(0, 5000, 100))
+  scale_x_continuous(breaks = seq(0, 5000, 100)) +
+  labs(x = 'Waiting Time', y = "Reporter", title = 'Time to Wait/Reporter') 
 ```
-There is something special here for user "6281680xxxx ", it seems his/her report mostly done in a long duration.Let see what is it?
+There is something special here for user "6281680xxxx ", it seems his/her report mostly done in a long duration (I think it has the same fashion as the daily basis waiting time anomaly). Let see what is it?
 
-```{r echo=FALSE, Bivariate_Plots}
-ggplot(data = subset(df, reporter == '6281680xxxx '), aes(y = reporter.ordered, x = category.ordered)) + 
-  geom_jitter(alpha = .5)
-
-subset(df, reporter == '6281680xxxx ')
+```{r echo=FALSE, Reporter_anomaly}
+ggplot(data = subset(df, reporter == '6281680xxxx '), aes(x = category.ordered)) + 
+  geom_bar(alpha = .5) +
+  labs(x = 'Category', y = "Count", title = 'User 6281680xxxx Categories') 
 ```
-Apparently, there are two categories that may done in long period which are, *Topik Lainnya* (other topic) and *Lingkungan hidup dan penanggulangan bencana* (Enviromental and Disaster Countermeasures), both of them are enlisted as top 10 report category. I think, it because the clarity of the report content so it requires time to determine which department that has to deal with it, or it suppoesed to took long time to finish.
+Apparently, there are two categories that may done in long period which are, *Topik Lainnya* (other topic) and *Lingkungan hidup dan penanggulangan bencana* (Enviromental and Disaster Countermeasures), both of them are enlisted as top 10 report category. I think, it because the clarity of the report content so it requires time to determine which department that has to deal with it, or it supposed to took long time to resolve a disaster.
 
-```{r echo=FALSE, Bivariate_Plots}
-ggplot(data = subset(df, related_department %in% df.related_department_count$related_department), aes(y = related_department, x = idle_time.day)) + 
-  geom_jitter(alpha = .05) +
-  scale_x_continuous(limits = c(0, quantile(df$idle_time.day, 0.68)), breaks = seq(0, 30, 1))
+I want to continue at the main variables first before I dive too deep for this user.
+
+```{r echo=FALSE, Time_to_Wait_Based_on_Department}
+ggplot(data = subset(df, related_department %in% df.related_department_count$related_department), aes(y = related_department.ordered, x = idle_time.day)) + 
+  geom_point(alpha = .05) +
+  scale_x_continuous(breaks = seq(0, 5000, 200)) +
+  labs(x = 'Waiting Time', y = "Related Department", title = 'Time to Wait/Department') 
 ```
+It seems there is no similar pattern with the previous charts.However I want to see the relation between waiting time and when the reports issued
 
-
-```{r echo=FALSE, Bivariate_Plots}
+```{r echo=FALSE, Duration_To_Finish}
 ggplot(data = df, aes(y = idle_time.day, x = report_issued.day)) + 
   geom_jitter(alpha = .01) +
   scale_y_continuous(limits = c(0, quantile(df$idle_time.day, 0.68)), breaks = seq(0, 30, 1)) +
@@ -252,90 +240,161 @@ ggplot(data = df, aes(y = idle_time.day, x = report_issued.day)) +
 
 ```
 
-It is interesting that this shows that every weekend there are small amount of reports finished, although there are some which might be urgent reports. However, on most case, reports are done only in one day (see Monday - Thursday), while on Friday, whether they intend to finish it in same day or on Monday after the weekends. Furthermore, on Saturday and Sunday, it seems there is very little report, thus there is no significant number of common duration.
+It is interesting that this shows that every weekend there are small amount of reports finished, although there are some which might be urgent reports. However, on most case, reports are done only in one day (see Monday - Thursday), while on Friday, whether they intend to finish it in same day or on Monday after the weekends. Furthermore, on Saturday and Sunday, it seems there is very little report, thus there is no significant number of common duration. Furthermore, I want to see the relations between numerical values such as report_closed, report_issued, and idle_time.
+
+**Correlation**
+```{r echo=FALSE, Correlation}
+cor(df$report_issued, df$report_closed, method = "pearson")
+cor(df$report_issued, df$idle_time, method = "pearson")
+cor(df$report_closed, df$idle_time, method = "pearson")
+```
+
+**Scatterplots**
+I will try to use log10 transformation on the idle_time.day to normalise the data.
+```{r echo=FALSE, Scatterplots}
+q1 <- ggplot(data = df, aes(y = report_issued, x = report_closed)) + 
+  geom_point(alpha = .1) +
+  labs(x = 'Time Closed (Epoch Time)', y = "Time Issued (Epoch Time)", title = 'Time Issued vs Time Solved for each Issue') 
+ 
+q2 <- ggplot(data = subset(df, !is.na(log10(idle_time.day+1))), aes(y = report_issued, x = idle_time.day+1)) + 
+  geom_point(alpha = .05) +
+  coord_trans(x = 'sqrt') +
+  labs(y = 'Time Issued (Epoch Time)', x = "Waiting Time to Finish (days)", title = 'Time Issued vs Waiting Time for each Issue') 
+
+grid.arrange(q1,q2)
+```
+It seems report_issued and report_closed have a high correlation, which may mean the reports relatively done in shorter time. This was also confirmed with the other plot that shows there is very small (almost none) correlation between the report_issued and idle_time. Furthermore, the plot shows that the waiting time relatively small. However, there are some cases that the finish time are somehow clustered on ~500 days. I want to see what time exactly it is.
+
+```{r echo=FALSE, Anomaly}
+ ggplot(data = subset(df, !is.na(log10(idle_time.day+1))), aes(y = report_issued, x = idle_time.day+1)) + 
+  geom_point(alpha = .05) +
+  coord_trans(x = 'sqrt') +
+  scale_x_continuous(limits= c(400, 500)) +
+  labs(y = 'Time Issued (Epoch Time)', x = "Waiting Time to Finish (days)", title = 'Time Issued vs Waiting Time for each Issue') 
+```
+
+```{r echo=FALSE, Time_of_Anomaly}
+#https://www.tutorialspoint.com/r/r_mean_median_mode.htm
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+mean(subset(df, idle_time.day > 400 & idle_time.day < 500)[,'report_issued'])
+median(subset(df, idle_time.day > 400 & idle_time.day < 500)[,'report_issued'])
+getmode(subset(df, idle_time.day > 400 & idle_time.day < 500)[,'report_issued'])
+```
+Respectively, above are the mean, median, and mode of the previous plot. When I tried to convert the timestamp into local time (GMT+7) and did some research on Google, I found that on these months (July-Aug 2013) there was some natural disasters occured. Which confirmed another previous plots that shows anomaly in range of ~500 idle time. I wonder why it took too long (almost 2 years to solve). Either it were not updated until it closed automatically, or the issues truly took almost 2 years to be resolved.
+Ref:
+ - https://www.epochconverter.com/timezones?q=1376629673&tz=Asia%2FJakarta
+ - https://reliefweb.int/report/indonesia/indonesia-humanitarian-snapshot-july-august-2013
 
 # Bivariate Analysis
 
-> **Tip**: As before, summarize what you found in your bivariate explorations
-here. Use the questions below to guide your discussion.
+### Talk about some of the relationships you observed in this part of the \ investigation. How did the feature(s) of interest vary with other features in \ the dataset?
+In this section, I mostly explore the relation of *idle_time*/waiting time with the other attributes. It is interesting that the other attribute may have impact or pattern with the waiting time.
 
-### Talk about some of the relationships you observed in this part of the \
-investigation. How did the feature(s) of interest vary with other features in \
-the dataset?
-
-### Did you observe any interesting relationships between the other features \
-(not the main feature(s) of interest)?
-
-### What was the strongest relationship you found?
-
+### Did you observe any interesting relationships between the other features \ (not the main feature(s) of interest)? What was the strongest relationship you found?
+As I mentioned before, I mostly explore the relation between *idle_time* and the other features. However, I also tried to see relationship between *report_issued* and *report_closed*. I found that the reports mostly finished in relatively short time.
 
 # Multivariate Plots Section
 
-> **Tip**: Now it's time to put everything together. Based on what you found in
-the bivariate plots section, create a few multivariate plots to investigate
-more complex interactions between variables. Make sure that the plots that you
-create here are justified by the plots you explored in the previous section. If
-you plan on creating any mathematical models, this is the section where you
-will do that.
+In this section I want to visualise the data in a map to gain better understanding via geographical picture. But first, I want to look indepth about the user 6281680xxxx to comprehensive exploration about the issue.
 
-```{r echo=FALSE, Multivariate_Plots}
+```{r echo=FALSE, Years_Time_to_Wait}
+ggplot(data = subset(df, reporter %in% df.reporter_count$reporter), aes(y = reporter.ordered, x = idle_time.day, color = factor(report_issued.year))) + 
+  geom_point(alpha = .5) +
+  scale_x_continuous(breaks = seq(0, 5000, 100)) +
+  labs(x = 'Waiting Time', y = "Reporter", title = 'Time to Wait/Reporter Year Based', colour ="Year Issued") +
+  scale_color_brewer(palette = 'Spectral')
+```
+It seems the report mostly issued on 2013-2014. However, it seems very little data for 2012. In the other hand, 2015 reports are commonly done earlier. Furthermore, I want to see where are commonly this reporter issuing the reports.
+
+```{r echo=FALSE, Reporting_Area}
+#https://stackoverflow.com/questions/19307896/using-ggplots-ggmap-function-to-superimpose-two-maps-on-top-of-each-other
+
+jkt_map <- ggmap(get_googlemap(center=c(106.7652727,-6.2359827), scale=1, zoom=10), extent="normal")
+
+jkt_map +
+  geom_point(data = subset(df, reporter == '6281680xxxx '), aes(y = latitude, x = longitude, color = idle_time.day), alpha = .5) +
+  scale_colour_gradient(low = 'blue', high = 'red')+
+  labs(x = 'Longitude', y = "Latitude", title = 'Reporter 6281680xxxx Reporting Area', colour ="Idle Time Issued") 
+```
+It seems it only around Jakarta. However, the longer idle time seems clustered into a certain point. It may indicating he she reporting a same issue overtime.
+I am getting over my curiosity about this user, as I move on to general distribution of the data.
+
+```{r echo=FALSE, Time_Issued}
+
+indo_map <- ggmap(get_googlemap(center=as.numeric(geocode("Indonesia")), scale=1, zoom=4), extent="normal")
+indo_map +
+  geom_point(data = subset(df, idle_time.day > quantile(idle_time.day, 0.90)), aes(y = latitude, x = longitude, colour = idle_time.day), alpha = .5) +
+  lims(y = c(-10,6), x = c(95,140)) +
+  scale_colour_gradient(low = 'yellow', high = 'black') +
+  labs(x = 'Longitude', y = "Latitude", title = 'Time to Wait/Area', colour ="Idle Time Issued")
 
 ```
+As seen in the graph, the fastest response area is located in East Java and slowest ones are Celebes, Borneo, and North Sumatera. Furthermore, the status mapping.
+```{r echo=FALSE, Last}
+indo_map +
+  geom_point(data = subset(df, idle_time.day > quantile(idle_time.day, 0.90)), aes(y = latitude, x = longitude, colour = status), alpha = .5) +
+  lims(y = c(-10,6), x = c(95,140)) +
+  scale_colour_brewer(palette = 'Set2')  +
+  labs(x = 'Longitude', y = "Latitude", title = 'Status Over Area', colour ="Status")
+```
+The chart shows that mostly the data are done. However in some area, there are balanced proportion between 'Processing' and 'Done' such as at the Island Sumatera and Island Halmahera.
 
 # Multivariate Analysis
 
-### Talk about some of the relationships you observed in this part of the \
-investigation. Were there features that strengthened each other in terms of \
-looking at your feature(s) of interest?
+### Talk about some of the relationships you observed in this part of the \investigation. Were there features that strengthened each other in terms of \looking at your feature(s) of interest?
+Yes, especially for the user 6281680xxxx, it shows where are the reports' origin that took too long be finished.
 
 ### Were there any interesting or surprising interactions between features?
-
-### OPTIONAL: Did you create any models with your dataset? Discuss the \
-strengths and limitations of your model.
+The data are scattered on the regional area. For example, in summary, the proportion of the finished reports are way too high compared with the other status; however, it seems just because data are highly clustered in Island Java, while in the other Islands the proportion seems not so distinct.
 
 ------
 
 # Final Plots and Summary
 
-> **Tip**: You've done a lot of exploration and have built up an understanding
-of the structure of and relationships between the variables in your dataset.
-Here, you will select three plots from all of your previous exploration to
-present here as a summary of some of your most interesting findings. Make sure
-that you have refined your selected plots for good titling, axis labels (with
-units), and good aesthetic choices (e.g. color, transparency). After each plot,
-make sure you justify why you chose each plot by describing what it shows.
-
 ### Plot One
 ```{r echo=FALSE, Plot_One}
-
+qplot(data =  subset(df, report_closed != report_last_activity), x = idle_time.day, binwidth = 25, color = I("white"), fill = I('#0c304a')) + 
+  scale_x_continuous(limits = c(0,600), breaks = seq(0, 600, 25)) +
+  labs(title = "Processing Time (daily basis)", x = "Number of Day(s)")
 ```
 
 ### Description One
-
+In this chart, it is interesting that there are some data that finished on a long period (> 300 days). 
 
 ### Plot Two
-```{r echo=FALSE, Plot_Two}
-
+```{r echo=FALSE, Plot_two}
+ ggplot(data = subset(df, !is.na(log10(idle_time.day+1))), aes(y = report_issued, x = idle_time.day+1, color = '#fffbcc')) + 
+  geom_point(alpha = .05) +
+  coord_trans(x = 'sqrt') +
+  scale_x_continuous(limits= c(400, 500)) +
+  labs(y = 'Time Issued (Epoch Time)', x = "Waiting Time to Finish (days)", title = 'Time Issued vs Waiting Time for each Issue')  + 
+  theme(legend.position="none")
 ```
 
 ### Description Two
-
+Eventually, I found one user that have a similar pattern to that anomaly. It shows there are some reports clustered in 400-500 days duration. Thus, I am curious about when are these reports issued. I found that these data are issued on these months (July-Aug 2013). 
 
 ### Plot Three
 ```{r echo=FALSE, Plot_Three}
-
+indo_map +
+  geom_point(data = subset(df, idle_time.day > quantile(idle_time.day, 0.90)), aes(y = latitude, x = longitude, colour = factor(status, labels = c("Belum (Not Yet)","Proses (In Progress)","Selesai (Done)"))), alpha = .5) +
+  lims(y = c(-10,6), x = c(95,140)) +
+  scale_colour_brewer(palette = 'Set2') +
+  labs(x = 'Longitude', y = "Latitude", title = 'Status Over Area', colour ="Status")
 ```
 
 ### Description Three
+Finally, I found an anomaly on the status of the reports, it seems propotions of 'Done' and 'In Progess' are different among islands. It seems the data are clustered at Java with mostly 'Done'. However, in the other islands such as Sumatera, Borneo, and Halmahera has indistinct difference.
 
 ------
 
 # Reflection
+I am collecting my data from a data repository. Originally, I have no knowledge about the data that being used in this analysis and there is no particular intention why I am using this data, it was simply because I saw it as available data that comply with the requirements. Furthermore, I thought there will be only a little information that I can extract from the data because I do not know the relation between the features. 
 
-> **Tip**: Here's the final step! Reflect on the exploration you performed and
-the insights you found. What were some of the struggles that you went through?
-What went well? What was surprising? Make sure you include an insight into
-future work that could be done with the dataset.
+However, it took a long time to be able work with this dataset. There are bad values here and there, which led me took longer time compared to if I am using the prepared dataset. It made me understands that data wrangling and cleaning took mostly the time for analysis. In addition, I have to took a long contemplation to understand connection between features and which combinations that may convey meaning and value. 
 
-> **Tip**: Don't forget to remove this, and the other **Tip** sections before
-saving your final work and knitting the final report!
+Thus, I have came up with some different ways to exploit the data. It was suprising that I can some unique findings (such as the waiting time duration anomaly), because at first I was pessimist about the data will show any significant value. These make me thought for the future, that I should have a better understanding about the data that I am going to dive in. I think this will save time of the contemplation.Eventually, I realised these all are only part of a great exploration.

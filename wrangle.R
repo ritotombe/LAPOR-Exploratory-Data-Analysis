@@ -1,4 +1,4 @@
-library(ggplot2)
+
 
 report <- read.csv(file = 'data/data.csv')
 area <- read.csv(file = 'data/daftararea.csv', sep = ';', quote = '"')
@@ -35,3 +35,16 @@ colnames(total) <- c("area",
 # https://stackoverflow.com/questions/24259194/elegant-way-to-drop-rare-factor-levels-from-data-frame
 
 write.csv(total, file = 'data/total.csv')
+
+# Install All Package
+
+install.packages("ggplot2") 
+install.packages("knitr")
+install.packages("dplyr")
+install.packages('gridExtra')
+install.packages('map')
+install.packages('lubridate')
+install.packages('anytime')
+install.packages("grid")
+install.packages('GGally')
+install.packages('psych')
