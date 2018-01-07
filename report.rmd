@@ -14,10 +14,19 @@ library(GGally)
 library(psych)
 ```
 
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, 
+                      warning=FALSE,
+                      message=FALSE, 
+                      fig.width = 10, 
+                      fig.height = 15)
+```
+
 ```{r echo=FALSE, Load_the_Data}
 # Load the Data
 df <- read.csv('data/total.csv') 
 ```
+
 # Introduction
 This data fetched from http://data.go.id/dataset/data-aspirasi-dan-pengaduan-masyarakat. It contains reports from Indonesian citizens by a platform called LAPOR!. This platform enables the officials to solve public issues that posted by citizens and it also inform the citizen if the issue was solved. Originally, the data was consist of two csvs, the first csv (data.csv) contains the report's content and its attributes such as creator, area, and category. The other csv (daftararea.csv), contains the area details including its latitude and longitude. Eventually, the csvs was merged based on "area" as shown in the *wrangle.R* file. However, some attributes were **deleted** because it contains redundancy with the other attributes or may contains sensitive materials, such attribute is the report's content.
 
@@ -45,22 +54,26 @@ summary(df)
 
 Below are the overall overview of the dataset
 
-```{r echo=FALSE, Overall_Report_Proportion}
+```{r echo=FALSE, Overall_Report_Proportion, fig.height = 5}
 df.group_by_status <- group_by(df, status)
 
-df.status_count <- summarise(df.group_by_status,
-                             n = n(),
-                             proportion = round(n()/nrow(df.group_by_status)*100,3))
+df.status_count <- 
+  summarise(df.group_by_status,
+            n = n(),
+            proportion = round(n()/nrow(df.group_by_status)*100,3))
 
 #https://www.statmethods.net/graphs/pie.html
-labels <- paste(c("Waiting", "In Progress", "Finished"), df.status_count$proportion)
+labels <- paste(c("Waiting", "In Progress", "Finished"), 
+                df.status_count$proportion)
 labels <- paste(labels, "%", sep=" ")
-pie(df.status_count$n, labels = labels, main = "Report Status Proportion")
+pie(df.status_count$n, 
+    labels = labels, 
+    main = "Report Status Proportion")
 ```
 
 As shown in the chart, the reports are mostly finished (Selesai) and less than 1% is still waiting to be processed. I wonder, when are these reports issued.
 
-```{r echo=FALSE, Univariate_Plots}
+```{r echo=FALSE, Univariate_Plots, fig.height = 5}
 #https://stackoverflow.com/questions/17496358/r-help-converting-factor-to-date
 #https://stackoverflow.com/questions/22603847/how-to-extract-month-from-date-in-r
 #https://stackoverflow.com/questions/13456241/convert-unix-epoch-to-date-object
@@ -70,47 +83,100 @@ df$report_issued.day <- weekdays(anydate(df$report_issued))
 
 not_processed <- subset(df, status == 'Belum')
 
-q1 <- qplot(data = df, x = report_issued.month, binwidth = 1, color = I('white'))+
-  scale_x_continuous(breaks = seq(1, 12, 1))
+q1 <- qplot(data = df, 
+            x = report_issued.month, 
+            binwidth = 1,
+            color = I('white')) +
+        scale_x_continuous(breaks = seq(1, 12, 1)) + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-q2 <- qplot(data = df, x = report_issued.year, binwidth = 1, color = I('white') )+
-  scale_x_continuous(breaks = seq(2009, 2016, 1))
+q2 <- qplot(data = df, 
+            x = report_issued.year, 
+            binwidth = 1, 
+            color = I('white')) +
+        scale_x_continuous(breaks = seq(2009, 2016, 1)) + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-q3 <- qplot(data = df, x = report_issued.day, color = I('white')) +
-  scale_x_discrete(limits =  c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+q3 <- qplot(data = df,
+            x = report_issued.day, 
+            color = I('white')) +
+        scale_x_discrete(limits =  c('Monday', 
+                                   'Tuesday', 
+                                   'Wednesday', 
+                                   'Thursday', 
+                                   'Friday', 
+                                   'Saturday', 
+                                   'Sunday')) + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-q4 <- qplot(data = not_processed, x = report_issued.month, binwidth = 1, color = I('white'))+
-  scale_x_continuous(breaks = seq(1, 12, 1))
+q4 <- qplot(data = not_processed, 
+            x = report_issued.month, 
+            binwidth = 1, 
+            color = I('white'))+
+        scale_x_continuous(breaks = seq(1, 12, 1)) + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-q5 <- qplot(data = not_processed, x = report_issued.year, binwidth = 1, color = I('white') )+
-  scale_x_continuous(breaks = seq(2009, 2016, 1))
+q5 <- qplot(data = not_processed,
+            x = report_issued.year, 
+            binwidth = 1, 
+            color = I('white') )+
+        scale_x_continuous(breaks = seq(2009, 2016, 1)) + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-q6 <- qplot(data = not_processed, x = report_issued.day, color = I('white')) +
-  scale_x_discrete(limits =  c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+q6 <- qplot(data = not_processed, 
+            x = report_issued.day, 
+            color = I('white')) +
+        scale_x_discrete(limits =  c('Monday', 
+                                     'Tuesday', 
+                                     'Wednesday', 
+                                     'Thursday', 
+                                     'Friday', 
+                                     'Saturday', 
+                                     'Sunday')) + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-grid.arrange(textGrob("All Status"), q1, q2, q3, textGrob("Waiting"), q4, q5, q6, ncol = 4, top = "Number of Reports Issued (Issue Time)" )
+grid.arrange(textGrob("All Status"), 
+             q1, q2, q3, 
+             textGrob("Waiting"), 
+             q4, q5, q6, 
+             ncol = 4, 
+             top = "Number of Reports Issued (Issue Time)" )
 ```
 
 As shown on the histograms above, there are some similarities and differences between the overall status and the waiting data. The similarities can be found in monthly and daily basis, such as the highest report issued in January and least reports issued on weekends. In the other hand, on yearly basis it shows the graphs are contradicted. This make me wonder how long it typically an issue to be solved? I will cover this in Bivariate section.
 
 Furthermore, lets check another time series variables. Such last activity, I wonder how long typically an acitvity being idle/processed (report_last_activity != report_closed).
 
-```{r echo=FALSE, Waiting_Time}
+```{r echo=FALSE, Waiting_Time, fig.height = 5}
 df$idle_time <- df$report_last_activity - df$report_issued
 
 df$idle_time.month <- df$idle_time/60/60/24/30
 
 df$idle_time.day <- df$idle_time/60/60/24
 
-q1 <- qplot(data =  subset(df, report_closed != report_last_activity), x = idle_time.month,  binwidth = 1, color =  I("white")) + 
-  scale_x_continuous(limits = c(0,quantile(df$idle_time.month, 0.99)), breaks = seq(0,quantile(df$idle_time.month, 0.99), 1)) +
-  labs(title = "Waiting/Processing Time (monthly basis)", x = "number of month(s)")
+q1 <- qplot(data =  subset(df, 
+                           report_closed != report_last_activity), 
+            x = idle_time.month,  
+            binwidth = 1, 
+            color =  I("white")) + 
+        scale_x_continuous(limits = c(0,
+                                      quantile(df$idle_time.month, 0.99)), 
+                           breaks = seq(0,
+                                        quantile(df$idle_time.month, 0.99), 
+                                        1)) +
+        labs(title = "Waiting/Processing Time (monthly basis)", 
+             x = "number of month(s)")
 
-q2 <- qplot(data =  subset(df, report_closed != report_last_activity), x = idle_time.day, binwidth = 50, color = I("white")) + 
-  labs(title = "Waiting/Processing Time (daily basis)", x = "number of day(s)")
+q2 <- qplot(data =  subset(df,
+                           report_closed != report_last_activity), 
+            x = idle_time.day, binwidth = 50, 
+            color = I("white")) + 
+        labs(title = "Waiting/Processing Time (daily basis)", 
+             x = "number of day(s)")
 
 grid.arrange(q1, q2)
 ```
+
 The histogram is highly skewed showing that time for waiting to be processed/processed time is relatively low. However, there are outliers indicated by longtail to be investigated. Furthermore, there is something interesting in the daily basis of waiting time, it shows increasing towards 500, while before it reach a slope.
 
 ```{r echo=FALSE, Subset_Summary}
@@ -119,22 +185,37 @@ summary(subset(df$idle_time.day, df$idle_time.day >= 0))
 
 I want to investigate the report_closed, when mostly the reports finished.
 
-```{r echo=FALSE, Univariate_Plots_2}
+```{r echo=FALSE, Univariate_Plots_2, fig.height = 10}
 df$report_closed.month <- month(anydate(df$report_closed))
 df$report_closed.year <- year(anydate(df$report_closed))
 df$report_closed.day <- weekdays(anydate(df$report_closed))
 
 
-q1 <- qplot(data = df, x = report_closed.month, binwidth = 1, color = I('white'))+
-  scale_x_continuous(breaks = seq(1, 12, 1))
+q1 <- qplot(data = df, 
+            x = report_closed.month, 
+            binwidth = 1, 
+            color = I('white')) +
+        scale_x_continuous(breaks = seq(1, 12, 1))
 
-q2 <- qplot(data = df, x = report_closed.year, binwidth = 1, color = I('white') )+
-  scale_x_continuous(breaks = seq(2009, 2016, 1))
+q2 <- qplot(data = df, 
+            x = report_closed.year, 
+            binwidth = 1, 
+            color = I('white')) +
+        scale_x_continuous(breaks = seq(2009, 2016, 1))
 
-q3 <- qplot(data = df, x = report_closed.day, color = I('white')) +
-  scale_x_discrete(limits =  c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))
+q3 <- qplot(data = df, 
+            x = report_closed.day, 
+            color = I('white')) +
+        scale_x_discrete(limits =  c('Monday', 
+                                     'Tuesday', 
+                                     'Wednesday', 
+                                     'Thursday', 
+                                     'Friday', 
+                                     'Saturday', 
+                                     'Sunday'))
 
-grid.arrange(q1, q2, q3, top = "Number of Reports Closed (Issue Time)" )
+grid.arrange(q1, q2, q3, 
+             top = "Number of Reports Closed (Issue Time)" )
 ```
 
 As shown, there are some unusual distribution on the daily histogram, lowest activity presented in Friday and Saturday. In contrast, In general in Indonesia, weekend are Saturday and Sunday. The monthly data shows that mostly reports closed in March and November.
@@ -181,7 +262,8 @@ df.category_count <- df.category_count[1:50,]
 
 
 df.related_department_count <- count(df, related_department)
-df.related_department_count <- df.related_department_count[order(-df.related_department_count$n),]
+df.related_department_count <- 
+df.related_department_count[order(-df.related_department_count$n),]
 df$related_department.ordered <- ordered(df$related_department, levels = df.related_department_count$related_department)
 df.related_department_count <- df.related_department_count[1:50,]
 
@@ -191,52 +273,86 @@ df.related_department_count <- df.related_department_count[1:50,]
 At first, I want to see the distribution of these variables to the idle time.
 
 ```{r echo=FALSE, Time_to_Wait_Based_on_Area}
- ggplot(data = subset(df, area %in% df.area_count$area), aes(y = area.ordered, x = idle_time.day)) + 
+ ggplot(data = subset(df, area %in% df.area_count$area), 
+        aes(y = area.ordered, 
+            x = idle_time.day)) + 
   geom_point(alpha = .1) +
   scale_x_continuous(breaks = seq(0, 5000, 100)) +
-  labs(x = 'Waiting Time', y = "Area", title = 'Time to Wait/Area') 
+  labs(x = 'Waiting Time', 
+       y = "Area", 
+       title = 'Time to Wait/Area') 
 ```
+
 I guess, this figure shows that the daily basis waiting time's anomaly. In detail, there are some provinces and cities that have similar pattern (high completion around 0-100 and 400-500). But still, I wonder are there any variables that produces same pattern?
 
 ```{r echo=FALSE, Time_to_Wait_Based_on_Category}
- ggplot(data = subset(df, category %in% df.category_count$category), aes(y = category.ordered, x = idle_time.day)) + 
+ ggplot(data = subset(df, category %in% df.category_count$category), 
+        aes(y = category.ordered, 
+            x = idle_time.day)) + 
   geom_point(alpha = .1) +
   scale_x_continuous( breaks = seq(0, 5000, 50)) +
-  labs(x = 'Waiting Time', y = "Category", title = 'Time to Wait/Category') 
+  labs(x = 'Waiting Time', 
+       y = "Category", 
+       title = 'Time to Wait/Category') + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-In regards of the categories, it is interesting that there are some categories that shows high variability in term of duration to finish it. For example (the plot should be enlarged to find all category), Jamkesmas, Raskin, ESDM, and BLSM. However, it does not produce same pattern as earlier plot. Let see another variables.
+In regards of the categories, it is interesting that there are some categories that shows high variability in term of duration to finish it. For example (the plot should be enlarged to find all category), Jamkesmas, Raskin, ESDM, and BLSM. However, it does not produce same pattern as earlier plot. Let see 
+another variables.
+
 ```{r echo=FALSE, Time_to_Wait_Based_on_Reporter}
 ggplot(data = subset(df, reporter %in% df.reporter_count$reporter), aes(y = reporter.ordered, x = idle_time.day)) + 
   geom_point(alpha = .1) +
   scale_x_continuous(breaks = seq(0, 5000, 100)) +
   labs(x = 'Waiting Time', y = "Reporter", title = 'Time to Wait/Reporter') 
 ```
-There is something special here for user "6281680xxxx ", it seems his/her report mostly done in a long duration (I think it has the same fashion as the daily basis waiting time anomaly). Let see what is it?
 
-```{r echo=FALSE, Reporter_anomaly}
-ggplot(data = subset(df, reporter == '6281680xxxx '), aes(x = category.ordered)) + 
+There is something special here for user "6281680xxxx ", it seems his/her report mostly done in a long duration (I think it has the same fashion as the daily basis waiting time anomaly). Let see what is it? (Below is an univariate plot, I put it here to keep the flow)
+
+```{r echo=FALSE, Reporter_anomaly, fig.height = 5}
+ggplot(data = subset(df, reporter == '6281680xxxx '), 
+       aes(x = category.ordered)) + 
   geom_bar(alpha = .5) +
-  labs(x = 'Category', y = "Count", title = 'User 6281680xxxx Categories') 
+  labs(x = 'Category', 
+       y = "Count", 
+       title = 'User 6281680xxxx Categories') + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
+
 Apparently, there are two categories that may done in long period which are, *Topik Lainnya* (other topic) and *Lingkungan hidup dan penanggulangan bencana* (Enviromental and Disaster Countermeasures), both of them are enlisted as top 10 report category. I think, it because the clarity of the report content so it requires time to determine which department that has to deal with it, or it supposed to took long time to resolve a disaster.
 
 I want to continue at the main variables first before I dive too deep for this user.
 
 ```{r echo=FALSE, Time_to_Wait_Based_on_Department}
-ggplot(data = subset(df, related_department %in% df.related_department_count$related_department), aes(y = related_department.ordered, x = idle_time.day)) + 
+ggplot(data = subset(df, 
+                     related_department %in% 
+                       df.related_department_count$related_department), 
+       aes(y = related_department.ordered, x = idle_time.day)) + 
   geom_point(alpha = .05) +
   scale_x_continuous(breaks = seq(0, 5000, 200)) +
-  labs(x = 'Waiting Time', y = "Related Department", title = 'Time to Wait/Department') 
+  labs(x = 'Waiting Time', 
+       y = "Related Department", 
+       title = 'Time to Wait/Department') 
 ```
+
 It seems there is no similar pattern with the previous charts.However I want to see the relation between waiting time and when the reports issued
 
-```{r echo=FALSE, Duration_To_Finish}
-ggplot(data = df, aes(y = idle_time.day, x = report_issued.day)) + 
-  geom_jitter(alpha = .01) +
-  scale_y_continuous(limits = c(0, quantile(df$idle_time.day, 0.68)), breaks = seq(0, 30, 1)) +
-  scale_x_discrete(limits =  c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')) + 
-  labs(x = 'Day of the Reports Issued', y = 'Duration of Waiting Time to Finish', title = 'Day Issued vs Duration to Finish')
+```{r echo=FALSE, Duration_To_Finish, fig.height = 5}
+ggplot(data = df, aes(y = idle_time.day, 
+                      x = report_issued.day)) + 
+  geom_bin2d() +
+  scale_y_continuous(limits = c(0, quantile(df$idle_time.day, 0.68)), 
+                     breaks = seq(0, 30, 1)) +
+  scale_x_discrete(limits =  c('Monday', 
+                               'Tuesday', 
+                               'Wednesday', 
+                               'Thursday', 
+                               'Friday', 
+                               'Saturday', 
+                               'Sunday')) + 
+  labs(x = 'Day of the Reports Issued', 
+       y = 'Duration of Waiting Time to Finish', 
+       title = 'Day Issued vs Duration to Finish')
 
 ```
 
@@ -250,27 +366,40 @@ cor(df$report_closed, df$idle_time, method = "pearson")
 ```
 
 **Scatterplots**
+
 I will try to use log10 transformation on the idle_time.day to normalise the data.
-```{r echo=FALSE, Scatterplots}
-q1 <- ggplot(data = df, aes(y = report_issued, x = report_closed)) + 
+
+```{r echo=FALSE, Scatterplots, fig.height = 5}
+q1 <- ggplot(data = df, aes(y = report_issued, 
+                            x = report_closed)) + 
   geom_point(alpha = .1) +
-  labs(x = 'Time Closed (Epoch Time)', y = "Time Issued (Epoch Time)", title = 'Time Issued vs Time Solved for each Issue') 
+  labs(x = 'Time Closed (Epoch Time)', 
+       y = "Time Issued (Epoch Time)", 
+       title = 'Time Issued vs Time Solved for each Issue') 
  
-q2 <- ggplot(data = subset(df, !is.na(log10(idle_time.day+1))), aes(y = report_issued, x = idle_time.day+1)) + 
+q2 <- ggplot(data = subset(df, !is.na(log10(idle_time.day+1))), 
+             aes(y = report_issued, x = idle_time.day+1)) + 
   geom_point(alpha = .05) +
   coord_trans(x = 'sqrt') +
-  labs(y = 'Time Issued (Epoch Time)', x = "Waiting Time to Finish (days)", title = 'Time Issued vs Waiting Time for each Issue') 
+  labs(y = 'Time Issued (Epoch Time)', 
+       x = "Waiting Time to Finish (days)", 
+       title = 'Time Issued vs Waiting Time for each Issue') 
 
 grid.arrange(q1,q2)
 ```
+
 It seems report_issued and report_closed have a high correlation, which may mean the reports relatively done in shorter time. This was also confirmed with the other plot that shows there is very small (almost none) correlation between the report_issued and idle_time. Furthermore, the plot shows that the waiting time relatively small. However, there are some cases that the finish time are somehow clustered on ~500 days. I want to see what time exactly it is.
 
-```{r echo=FALSE, Anomaly}
- ggplot(data = subset(df, !is.na(log10(idle_time.day+1))), aes(y = report_issued, x = idle_time.day+1)) + 
+```{r echo=FALSE, Anomaly, fig.height = 5}
+ ggplot(data = subset(df, !is.na(log10(idle_time.day+1))), 
+        aes(y = report_issued, 
+            x = idle_time.day+1)) + 
   geom_point(alpha = .05) +
   coord_trans(x = 'sqrt') +
   scale_x_continuous(limits= c(400, 500)) +
-  labs(y = 'Time Issued (Epoch Time)', x = "Waiting Time to Finish (days)", title = 'Time Issued vs Waiting Time for each Issue') 
+  labs(y = 'Time Issued (Epoch Time)', 
+       x = "Waiting Time to Finish (days)", 
+       title = 'Time Issued vs Waiting Time for each Issue') 
 ```
 
 ```{r echo=FALSE, Time_of_Anomaly}
@@ -283,7 +412,9 @@ getmode <- function(v) {
 mean(subset(df, idle_time.day > 400 & idle_time.day < 500)[,'report_issued'])
 median(subset(df, idle_time.day > 400 & idle_time.day < 500)[,'report_issued'])
 getmode(subset(df, idle_time.day > 400 & idle_time.day < 500)[,'report_issued'])
+
 ```
+
 Respectively, above are the mean, median, and mode of the previous plot. When I tried to convert the timestamp into local time (GMT+7) and did some research on Google, I found that on these months (July-Aug 2013) there was some natural disasters occured. Which confirmed another previous plots that shows anomaly in range of ~500 idle time. I wonder why it took too long (almost 2 years to solve). Either it were not updated until it closed automatically, or the issues truly took almost 2 years to be resolved.
 Ref:
  - https://www.epochconverter.com/timezones?q=1376629673&tz=Asia%2FJakarta
@@ -302,45 +433,79 @@ As I mentioned before, I mostly explore the relation between *idle_time* and the
 In this section I want to visualise the data in a map to gain better understanding via geographical picture. But first, I want to look indepth about the user 6281680xxxx to comprehensive exploration about the issue.
 
 ```{r echo=FALSE, Years_Time_to_Wait}
-ggplot(data = subset(df, reporter %in% df.reporter_count$reporter), aes(y = reporter.ordered, x = idle_time.day, color = factor(report_issued.year))) + 
+ggplot(data = subset(df, 
+                     reporter %in% 
+                       df.reporter_count$reporter), 
+       aes(y = reporter.ordered, 
+           x = idle_time.day, 
+           color = factor(report_issued.year))) + 
   geom_point(alpha = .5) +
   scale_x_continuous(breaks = seq(0, 5000, 100)) +
-  labs(x = 'Waiting Time', y = "Reporter", title = 'Time to Wait/Reporter Year Based', colour ="Year Issued") +
+  labs(x = 'Waiting Time', 
+       y = "Reporter", 
+       title = 'Time to Wait/Reporter Year Based', 
+       colour ="Year Issued") +
   scale_color_brewer(palette = 'Spectral')
 ```
+
 It seems the report mostly issued on 2013-2014. However, it seems very little data for 2012. In the other hand, 2015 reports are commonly done earlier. Furthermore, I want to see where are commonly this reporter issuing the reports.
 
-```{r echo=FALSE, Reporting_Area}
+```{r echo=FALSE, Reporting_Area, fig.height = 5}
 #https://stackoverflow.com/questions/19307896/using-ggplots-ggmap-function-to-superimpose-two-maps-on-top-of-each-other
 
-jkt_map <- ggmap(get_googlemap(center=c(106.7652727,-6.2359827), scale=1, zoom=10), extent="normal")
+jkt_map <- ggmap(get_googlemap(center=c(106.7652727,-6.2359827), 
+                               scale=1, 
+                               zoom=10), 
+                 extent="normal")
 
 jkt_map +
-  geom_point(data = subset(df, reporter == '6281680xxxx '), aes(y = latitude, x = longitude, color = idle_time.day), alpha = .5) +
+  geom_point(data = subset(df, reporter == '6281680xxxx '), 
+             aes(y = latitude, x = longitude, color = idle_time.day), 
+             alpha = .5) +
   scale_colour_gradient(low = 'blue', high = 'red')+
-  labs(x = 'Longitude', y = "Latitude", title = 'Reporter 6281680xxxx Reporting Area', colour ="Idle Time Issued") 
+  labs(x = 'Longitude', 
+       y = "Latitude", 
+       title = 'Reporter 6281680xxxx Reporting Area', colour ="Idle Time Issued") 
 ```
+
 It seems it only around Jakarta. However, the longer idle time seems clustered into a certain point. It may indicating he she reporting a same issue overtime.
 I am getting over my curiosity about this user, as I move on to general distribution of the data.
 
-```{r echo=FALSE, Time_Issued}
+```{r echo=FALSE, Time_Issued, fig.height = 5}
 
-indo_map <- ggmap(get_googlemap(center=as.numeric(geocode("Indonesia")), scale=1, zoom=4), extent="normal")
+indo_map <- ggmap(get_googlemap(center=as.numeric(geocode("Indonesia")), 
+                                scale=1, 
+                                zoom=4), 
+                  extent="normal")
 indo_map +
-  geom_point(data = subset(df, idle_time.day > quantile(idle_time.day, 0.90)), aes(y = latitude, x = longitude, colour = idle_time.day), alpha = .5) +
+  geom_point(data = subset(df, idle_time.day > quantile(idle_time.day, 0.90)), 
+             aes(y = latitude, x = longitude, colour = idle_time.day), 
+             alpha = .5) +
   lims(y = c(-10,6), x = c(95,140)) +
-  scale_colour_gradient(low = 'yellow', high = 'black') +
-  labs(x = 'Longitude', y = "Latitude", title = 'Time to Wait/Area', colour ="Idle Time Issued")
+  scale_colour_gradient(low = 'yellow', 
+                        high = 'black') +
+  labs(x = 'Longitude', 
+       y = "Latitude", 
+       title = 'Time to Wait/Area', colour ="Idle Time Issued")
 
 ```
-As seen in the graph, the fastest response area is located in East Java and slowest ones are Celebes, Borneo, and North Sumatera. Furthermore, the status mapping.
-```{r echo=FALSE, Last}
+
+As seen in the graph, the fastest response area is located in East Java and slowest ones are Celebes, 
+Borneo, and North Sumatera. Furthermore, the status mapping.
+
+```{r echo=FALSE, Last, fig.height = 5}
 indo_map +
-  geom_point(data = subset(df, idle_time.day > quantile(idle_time.day, 0.90)), aes(y = latitude, x = longitude, colour = status), alpha = .5) +
-  lims(y = c(-10,6), x = c(95,140)) +
+  geom_point(data = subset(df, idle_time.day > quantile(idle_time.day, 0.90)), 
+             aes(y = latitude, x = longitude, colour = status), 
+             alpha = .5) +
+  lims(y = c(-10,6), 
+       x = c(95,140)) +
   scale_colour_brewer(palette = 'Set2')  +
-  labs(x = 'Longitude', y = "Latitude", title = 'Status Over Area', colour ="Status")
+  labs(x = 'Longitude', 
+       y = "Latitude",
+       title = 'Status Over Area', colour ="Status")
 ```
+
 The chart shows that mostly the data are done. However in some area, there are balanced proportion between 'Processing' and 'Done' such as at the Island Sumatera and Island Halmahera.
 
 # Multivariate Analysis
@@ -356,22 +521,41 @@ The data are scattered on the regional area. For example, in summary, the propor
 # Final Plots and Summary
 
 ### Plot One
-```{r echo=FALSE, Plot_One}
-qplot(data =  subset(df, report_closed != report_last_activity), x = idle_time.day, binwidth = 25, color = I("white"), fill = I('#0c304a')) + 
-  scale_x_continuous(limits = c(0,600), breaks = seq(0, 600, 25)) +
-  labs(title = "Processing Time (daily basis)", x = "Number of Day(s)")
+```{r echo=FALSE, Plot_One, fig.height = 5}
+qplot(data =  subset(df, 
+                     report_closed != report_last_activity), 
+      x = idle_time.day, 
+      binwidth = 25, 
+      color = I("white"), 
+      fill = I('#0c304a')) + 
+  scale_x_continuous(limits = c(0,600), 
+                     breaks = seq(0, 600, 25)) +
+  labs(title = "Processing Time (daily basis)", 
+       x = "Number of Day(s)")
 ```
 
 ### Description One
 In this chart, it is interesting that there are some data that finished on a long period (> 300 days). 
 
 ### Plot Two
-```{r echo=FALSE, Plot_two}
- ggplot(data = subset(df, !is.na(log10(idle_time.day+1))), aes(y = report_issued, x = idle_time.day+1, color = '#fffbcc')) + 
+```{r echo=FALSE, Plot_two, fig.height = 5}
+options(scipen=999)
+ ggplot(data = subset(df, 
+                      !is.na(log10(idle_time.day+1))), 
+        aes(y = report_issued, 
+            x = idle_time.day+1, 
+            color = '#fffbcc')) + 
   geom_point(alpha = .05) +
   coord_trans(x = 'sqrt') +
   scale_x_continuous(limits= c(400, 500)) +
-  labs(y = 'Time Issued (Epoch Time)', x = "Waiting Time to Finish (days)", title = 'Time Issued vs Waiting Time for each Issue')  + 
+  scale_y_continuous(breaks = seq(1350000000, 1425000000, 25000000), 
+                     labels=c("October 12, 2012", 
+                              "July 28, 2013 ", 
+                              "May 13, 2014",
+                              'February 27, 2015')) +
+  labs(y = 'Time Issued', 
+       x = "Waiting Time to Finish (days)", 
+       title = 'Time Issued vs Waiting Time for each Issue')  + 
   theme(legend.position="none")
 ```
 
@@ -379,12 +563,23 @@ In this chart, it is interesting that there are some data that finished on a lon
 Eventually, I found one user that have a similar pattern to that anomaly. It shows there are some reports clustered in 400-500 days duration. Thus, I am curious about when are these reports issued. I found that these data are issued on these months (July-Aug 2013). 
 
 ### Plot Three
-```{r echo=FALSE, Plot_Three}
+```{r echo=FALSE, Plot_Three, fig.height = 5}
 indo_map +
-  geom_point(data = subset(df, idle_time.day > quantile(idle_time.day, 0.90)), aes(y = latitude, x = longitude, colour = factor(status, labels = c("Belum (Not Yet)","Proses (In Progress)","Selesai (Done)"))), alpha = .5) +
-  lims(y = c(-10,6), x = c(95,140)) +
+  geom_point(data = subset(df, 
+                           idle_time.day > quantile(idle_time.day, 0.90)), 
+             aes(y = latitude, 
+                 x = longitude, 
+                 colour = factor(status, 
+                                 labels = c("Belum (Not Yet)",
+                                            "Proses (In Progress)",
+                                            "Selesai (Done)"))), 
+             alpha = .5) +
+  lims(y = c(-10,6), 
+       x = c(95,140)) +
   scale_colour_brewer(palette = 'Set2') +
-  labs(x = 'Longitude', y = "Latitude", title = 'Status Over Area', colour ="Status")
+  labs(x = 'Longitude', 
+       y = "Latitude", 
+       title = 'Status Over Area', colour ="Status")
 ```
 
 ### Description Three
